@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0E1116">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Cartão">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' rx='40' fill='%230E1116'/%3E%3Crect x='38' y='58' width='104' height='72' rx='12' fill='none' stroke='%232DD4A7' stroke-width='7'/%3E%3Crect x='38' y='78' width='104' height='12' fill='%232DD4A7'/%3E%3C/svg%3E">
+<title>Gastos do cartão</title>
+<style>
+  :root{
+    --bg:#0E1116;
+    --card:#171B22;
+    --card-2:#1E232C;
+    --ink:#F2F4F7;
+    --muted:#8A93A0;
+    --track:#282E38;
+    --safe:#2DD4A7;
+    --warn:#F2B33D;
+    --danger:#F26D6D;
+    --line:#252B34;
+    --accent:var(--safe);
+    --radius:20px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:22px 20px 40px}
+  .tabnum{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+
+  /* header */
+  header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:26px}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .month{font-size:20px;font-weight:700;margin-top:4px;text-transform:capitalize}
+  .reset-note{font-size:11px;color:var(--muted);text-align:right;line-height:1.4}
+
+  /* hero */
+  .hero{margin-bottom:8px}
+  .hero .label{font-size:13px;color:var(--muted);font-weight:600;margin-bottom:2px}
+  .hero .amount{font-size:52px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+  .hero .amount.over{color:var(--danger)}
+  .hero .sub{font-size:13px;color:var(--muted);margin-top:6px;min-height:18px}
+
+  /* bar */
+  .bar-outer{height:14px;border-radius:99px;background:var(--track);overflow:hidden;margin:20px 0 10px}
+  .bar-inner{height:100%;width:0;border-radius:99px;background:var(--accent);transition:width .5s cubic-bezier(.2,.7,.2,1),background .3s}
+  .bar-meta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-weight:600}
+  .bar-meta .pct{color:var(--ink)}
+
+  /* stat row */
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:22px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .stat button.edit{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:space-between;width:100%}
+  .stat .k{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+  .stat .v{font-size:24px;font-weight:700}
+  .stat .pen{font-size:11px;color:var(--accent);font-weight:600}
+
+  /* primary button */
+  .primary{
+    all:unset;display:block;width:100%;text-align:center;box-sizing:border-box;
+    background:var(--safe);color:#08130F;font-weight:800;font-size:16px;
+    padding:17px;border-radius:16px;cursor:pointer;margin-top:4px;
+  }
+  .primary:active{transform:scale(.99)}
+
+  /* updates */
+  .updates{margin-top:26px}
+  .updates summary{cursor:pointer;list-style:none;color:var(--muted);font-size:13px;font-weight:600;display:flex;align-items:center;gap:6px;padding:4px 0}
+  .updates summary::-webkit-details-marker{display:none}
+  .updates summary .chev{transition:transform .2s}
+  .updates[open] summary .chev{transform:rotate(90deg)}
+  .u-list{margin-top:12px;display:flex;flex-direction:column;gap:1px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  .u-item{display:flex;align-items:center;justify-content:space-between;background:var(--card);padding:14px 16px}
+  .u-item .u-val{font-weight:700}
+  .u-item .u-date{font-size:12px;color:var(--muted);margin-left:10px;font-weight:600}
+  .u-left{display:flex;align-items:baseline}
+  .u-del{all:unset;cursor:pointer;color:var(--muted);font-size:18px;padding:4px 8px;border-radius:8px}
+  .u-del:active{background:var(--card-2)}
+  .u-empty{background:var(--card);padding:18px 16px;color:var(--muted);font-size:13px;text-align:center;border-radius:14px;border:1px solid var(--line)}
+
+  /* modal */
+  .backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(2px);display:none;align-items:flex-end;justify-content:center;z-index:50}
+  .backdrop.show{display:flex}
+  .sheet{background:var(--card);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding:22px 20px calc(22px + env(safe-area-inset-bottom));border-top:1px solid var(--line);animation:rise .28s cubic-bezier(.2,.8,.2,1)}
+  @keyframes rise{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .sheet h2{margin:0 0 4px;font-size:19px}
+  .sheet p.hint{margin:0 0 18px;color:var(--muted);font-size:13px}
+  .field{margin-bottom:16px}
+  .field label{display:block;font-size:12px;color:var(--muted);font-weight:600;margin-bottom:7px}
+  .field input{
+    width:100%;box-sizing:border-box;background:var(--card-2);border:1px solid var(--line);
+    color:var(--ink);font-size:18px;font-weight:700;padding:14px;border-radius:13px;
+    font-variant-numeric:tabular-nums;
+  }
+  .field input:focus{outline:2px solid var(--safe);outline-offset:1px;border-color:transparent}
+  .prefix-wrap{position:relative}
+  .prefix-wrap span{position:absolute;left:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-weight:700;font-size:18px;pointer-events:none}
+  .prefix-wrap input{padding-left:42px}
+  .sheet-actions{display:flex;gap:10px;margin-top:8px}
+  .btn{all:unset;flex:1;text-align:center;box-sizing:border-box;padding:15px;border-radius:13px;font-weight:800;cursor:pointer;font-size:15px}
+  .btn.ghost{background:var(--card-2);color:var(--ink)}
+  .btn.solid{background:var(--safe);color:#08130F}
+  .btn.danger{background:var(--danger);color:#2A0808}
+  .btn:active{transform:scale(.99)}
+
+  /* resumo copiável */
+  .summary{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .summary .s-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+  .summary .s-title{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .summary .copy{all:unset;cursor:pointer;background:var(--card-2);color:var(--ink);font-weight:700;font-size:13px;padding:8px 14px;border-radius:10px}
+  .summary .copy:active{transform:scale(.98)}
+  .summary .copy.done{background:var(--safe);color:#08130F}
+  .summary pre{margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.7;color:var(--ink);white-space:pre-wrap;font-variant-numeric:tabular-nums}
+
+  /* limpar tudo */
+  .clear-all{all:unset;display:block;width:100%;box-sizing:border-box;text-align:center;margin-top:22px;padding:15px;border-radius:14px;border:1px solid var(--line);color:var(--danger);font-weight:700;font-size:14px;cursor:pointer}
+  .clear-all:active{background:var(--card)}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Fatura do mês</div>
+      <div class="month" id="monthLabel">—</div>
+    </div>
+    <div class="reset-note">controle<br>manual</div>
+  </header>
+
+  <section class="hero">
+    <div class="label" id="heroLabel">Disponível no limite</div>
+    <div class="amount tabnum" id="heroAmount">R$ 0</div>
+    <div class="sub" id="heroSub"></div>
+  </section>
+
+  <div class="bar-outer"><div class="bar-inner" id="bar"></div></div>
+  <div class="bar-meta">
+    <span id="usedLabel">R$ 0 usados</span>
+    <span class="pct tabnum" id="pctLabel">0%</span>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="k">Gasto atual</div>
+      <div class="v tabnum" id="spentVal">R$ 0</div>
+    </div>
+    <div class="stat">
+      <button class="edit" id="openLimit" aria-label="Editar limite do mês">
+        <div>
+          <div class="k">Limite do mês</div>
+          <div class="v tabnum" id="limitVal">—</div>
+        </div>
+        <span class="pen">editar</span>
+      </button>
+    </div>
+  </div>
+
+  <button class="primary" id="openUpdate">Atualizar gasto</button>
+
+  <details class="updates">
+    <summary><span class="chev">›</span> Atualizações deste mês</summary>
+    <div class="u-list" id="uList"></div>
+  </details>
+
+  <div class="summary">
+    <div class="s-head">
+      <span class="s-title">Resumo</span>
+      <button class="copy" id="copyBtn">Copiar</button>
+    </div>
+    <pre id="summaryText"></pre>
+  </div>
+
+  <button class="clear-all" id="clearBtn">Limpar tudo</button>
+</div>
+
+<!-- Sheet: atualizar gasto -->
+<div class="backdrop" id="updateBackdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="updTitle">
+    <h2 id="updTitle">Atualizar gasto</h2>
+    <p class="hint">Informe o total gasto até uma data. Substitui o valor atual.</p>
+    <div class="field">
+      <label for="updValue">Total gasto (R$)</label>
+      <div class="prefix-wrap">
+        <span>R$</span>
+        <input id="updValue" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </div>
+    </div>
+    <div class="field">
+      <label for="updDate">Até a data</label>
+      <input id="updDate" type="date">
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="updCancel">Cancelar</button>
+      <button class="btn solid" id="updSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sheet: limite -->
+<div class="backdrop" id="limitBackdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="limTitle">
+    <h2 id="limTitle">Limite do mês</h2>
+    <p class="hint">O valor fica salvo até você trocar ou limpar tudo.</p>
+    <div class="field">
+      <label for="limValue">Limite (R$)</label>
+      <div class="prefix-wrap">
+        <span>R$</span>
+        <input id="limValue" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="limCancel">Cancelar</button>
+      <button class="btn solid" id="limSave">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Sheet: confirmar limpar tudo -->
+<div class="backdrop" id="clearBackdrop">
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="clearTitle">
+    <h2 id="clearTitle">Limpar tudo?</h2>
+    <p class="hint">Isso apaga os gastos e o limite. Não dá para desfazer.</p>
+    <div class="sheet-actions">
+      <button class="btn ghost" id="clearCancel">Cancelar</button>
+      <button class="btn danger" id="clearConfirm">Apagar tudo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY = "gastos_cartao_v1";
+
+  // ---------- helpers ----------
+  var brl = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+  var brl0 = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL',minimumFractionDigits:0,maximumFractionDigits:0});
+  function money(n){ return (Number.isInteger(n) ? brl0 : brl).format(n); }
+
+  function localISO(d){
+    var y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), day=String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
+  function monthKey(d){ return localISO(d).slice(0,7); }
+  function ddmm(iso){ var p=iso.split('-'); return p[2]+'/'+p[1]; }
+  function monthName(key){
+    var p=key.split('-'), d=new Date(Number(p[0]), Number(p[1])-1, 1);
+    return d.toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  }
+  // aceita "2.000,50" ou "2000.50" ou "2000"
+  function parseValue(str){
+    if(str==null) return NaN;
+    str = String(str).trim().replace(/\s|R\$/g,'');
+    if(str==='') return NaN;
+    if(str.indexOf(',')>-1){ str = str.replace(/\./g,'').replace(',', '.'); }
+    var n = parseFloat(str);
+    return isNaN(n) ? NaN : n;
+  }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+
+  // ---------- state ----------
+  var state = load();
+
+  function load(){
+    var raw;
+    try { raw = JSON.parse(localStorage.getItem(KEY)); } catch(e){ raw=null; }
+    if(!raw || typeof raw!=='object'){
+      return { limit:0, updates:[] };
+    }
+    // sem reset automático: os dados só mudam quando você atualiza ou limpa
+    raw.updates = Array.isArray(raw.updates)? raw.updates : [];
+    raw.limit = Number(raw.limit)||0;
+    return raw;
+  }
+  function save(){
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch(e){ alert('Não consegui salvar no aparelho. Verifique se o armazenamento do navegador está liberado.'); }
+  }
+
+  // gasto atual = atualização com a data mais recente (empate: a mais nova inserida, que fica no fim)
+  function currentUpdate(){
+    if(!state.updates.length) return null;
+    var sorted = state.updates.slice().sort(function(a,b){
+      if(a.date===b.date) return 0;
+      return a.date<b.date?-1:1;
+    });
+    return sorted[sorted.length-1];
+  }
+  function currentSpent(){ var u=currentUpdate(); return u?u.value:0; }
+
+  // ---------- render ----------
+  var el = function(id){ return document.getElementById(id); };
+
+  function render(){
+    el('monthLabel').textContent = monthName(monthKey(new Date()));
+
+    var limit = state.limit;
+    var spent = currentSpent();
+    var cur = currentUpdate();
+
+    el('spentVal').textContent = money(spent);
+    el('limitVal').textContent = limit>0 ? money(limit) : 'definir';
+
+    var bar = el('bar');
+    var pctRaw = limit>0 ? (spent/limit)*100 : 0;
+    var pctShown = Math.max(0, Math.round(pctRaw));
+
+    // cor conforme proximidade do limite
+    var color = 'var(--safe)';
+    if(limit>0){
+      if(pctRaw>100) color='var(--danger)';
+      else if(pctRaw>=80) color='var(--warn)';
+    }
+    bar.style.width = Math.min(pctRaw,100) + '%';
+    bar.style.background = color;
+
+    el('pctLabel').textContent = limit>0 ? pctShown+'%' : '—';
+    el('usedLabel').textContent = money(spent)+' usados';
+
+    // hero
+    var heroAmount = el('heroAmount');
+    var heroLabel = el('heroLabel');
+    var heroSub = el('heroSub');
+    heroAmount.classList.remove('over');
+
+    if(limit<=0){
+      heroLabel.textContent = 'Defina seu limite';
+      heroAmount.textContent = money(spent);
+      heroSub.textContent = 'Toque em "Limite do mês" para começar.';
+    } else {
+      var restante = limit - spent;
+      if(restante >= 0){
+        heroLabel.textContent = 'Disponível no limite';
+        heroAmount.textContent = money(restante);
+      } else {
+        heroLabel.textContent = 'Acima do limite';
+        heroAmount.textContent = money(Math.abs(restante));
+        heroAmount.classList.add('over');
+      }
+      heroSub.textContent = cur ? ('Gasto atualizado até '+ddmm(cur.date)) : 'Nenhuma atualização ainda neste mês.';
+    }
+
+    renderList();
+    renderSummary(spent, limit, cur);
+  }
+
+  function renderSummary(spent, limit, cur){
+    var lines = [];
+    if(cur){
+      lines.push('Gasto até '+ddmm(cur.date)+': '+money(spent));
+    } else {
+      lines.push('Gasto no mês: '+money(spent));
+    }
+    lines.push('Limite: '+(limit>0 ? money(limit) : 'não definido'));
+    if(limit>0){
+      lines.push('Disponível: '+money(limit - spent));
+    }
+    el('summaryText').textContent = lines.join('\n');
+  }
+
+  function renderList(){
+    var box = el('uList');
+    box.innerHTML='';
+    if(!state.updates.length){
+      var e=document.createElement('div');
+      e.className='u-empty';
+      e.textContent='Sem atualizações. Toque em "Atualizar gasto".';
+      box.appendChild(e);
+      return;
+    }
+    var sorted = state.updates.slice().sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:0); });
+    sorted.forEach(function(u){
+      var row=document.createElement('div'); row.className='u-item';
+      var left=document.createElement('div'); left.className='u-left';
+      var v=document.createElement('span'); v.className='u-val tabnum'; v.textContent=money(u.value);
+      var d=document.createElement('span'); d.className='u-date'; d.textContent='até '+ddmm(u.date);
+      left.appendChild(v); left.appendChild(d);
+      var del=document.createElement('button'); del.className='u-del'; del.setAttribute('aria-label','Excluir atualização'); del.textContent='×';
+      del.addEventListener('click', function(){
+        state.updates = state.updates.filter(function(x){ return x.id!==u.id; });
+        save(); render();
+      });
+      row.appendChild(left); row.appendChild(del);
+      box.appendChild(row);
+    });
+  }
+
+  // ---------- modal helpers ----------
+  function openSheet(b){ b.classList.add('show'); }
+  function closeSheet(b){ b.classList.remove('show'); }
+
+  // update sheet
+  var updB=el('updateBackdrop');
+  el('openUpdate').addEventListener('click', function(){
+    el('updValue').value='';
+    el('updDate').value=localISO(new Date());
+    openSheet(updB);
+    setTimeout(function(){ el('updValue').focus(); }, 60);
+  });
+  el('updCancel').addEventListener('click', function(){ closeSheet(updB); });
+  el('updSave').addEventListener('click', function(){
+    var val=parseValue(el('updValue').value);
+    var date=el('updDate').value;
+    if(isNaN(val) || val<0){ alert('Informe um valor válido.'); return; }
+    if(!date){ alert('Escolha a data.'); return; }
+    // se já existe atualização nessa mesma data, substitui
+    var existing = state.updates.filter(function(x){ return x.date===date; });
+    if(existing.length){ existing.forEach(function(x){ x.value=val; }); }
+    else { state.updates.push({id:uid(), value:val, date:date}); }
+    save(); render(); closeSheet(updB);
+  });
+
+  // limit sheet
+  var limB=el('limitBackdrop');
+  el('openLimit').addEventListener('click', function(){
+    el('limValue').value = state.limit>0 ? String(state.limit).replace('.',',') : '';
+    openSheet(limB);
+    setTimeout(function(){ el('limValue').focus(); }, 60);
+  });
+  el('limCancel').addEventListener('click', function(){ closeSheet(limB); });
+  el('limSave').addEventListener('click', function(){
+    var val=parseValue(el('limValue').value);
+    if(isNaN(val) || val<0){ alert('Informe um limite válido.'); return; }
+    state.limit=val; save(); render(); closeSheet(limB);
+  });
+
+  // fechar tocando no fundo
+  [updB,limB].forEach(function(b){
+    b.addEventListener('click', function(e){ if(e.target===b) closeSheet(b); });
+  });
+  // Enter salva
+  el('updValue').addEventListener('keydown', function(e){ if(e.key==='Enter') el('updSave').click(); });
+  el('limValue').addEventListener('keydown', function(e){ if(e.key==='Enter') el('limSave').click(); });
+
+  // copiar resumo
+  el('copyBtn').addEventListener('click', function(){
+    var txt = el('summaryText').textContent;
+    var btn = el('copyBtn');
+    function done(){
+      btn.textContent='Copiado'; btn.classList.add('done');
+      setTimeout(function(){ btn.textContent='Copiar'; btn.classList.remove('done'); }, 1600);
+    }
+    function fallback(){
+      var ta=document.createElement('textarea'); ta.value=txt;
+      ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta);
+      ta.focus(); ta.select();
+      try{ document.execCommand('copy'); done(); }catch(e){ alert('Copie manualmente:\n\n'+txt); }
+      document.body.removeChild(ta);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(done).catch(fallback);
+    } else { fallback(); }
+  });
+
+  // limpar tudo (gastos + limite), com confirmação in-app
+  var clearB=el('clearBackdrop');
+  el('clearBtn').addEventListener('click', function(){ openSheet(clearB); });
+  el('clearCancel').addEventListener('click', function(){ closeSheet(clearB); });
+  clearB.addEventListener('click', function(e){ if(e.target===clearB) closeSheet(clearB); });
+  el('clearConfirm').addEventListener('click', function(){
+    state = { limit:0, updates:[] };
+    save(); render(); closeSheet(clearB);
+  });
+
+  save();
+  render();
+
+  // manifest para "adicionar à tela inicial"
+  try{
+    var man={name:"Gastos do cartão",short_name:"Cartão",display:"standalone",background_color:"#0E1116",theme_color:"#0E1116",
+      icons:[{src:"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' rx='112' fill='%230E1116'/%3E%3Crect x='108' y='166' width='296' height='204' rx='34' fill='none' stroke='%232DD4A7' stroke-width='20'/%3E%3Crect x='108' y='222' width='296' height='34' fill='%232DD4A7'/%3E%3C/svg%3E",sizes:"512x512",type:"image/svg+xml"}]};
+    var blob=new Blob([JSON.stringify(man)],{type:'application/json'});
+    var l=document.createElement('link'); l.rel='manifest'; l.href=URL.createObjectURL(blob);
+    document.head.appendChild(l);
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
